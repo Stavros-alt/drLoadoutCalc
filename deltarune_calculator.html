@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deltarune Ultimate Loadout Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dr-black: #000000;
+            --dr-white: #FFFFFF;
+            --dr-cyan: #00FFFF;
+            --dr-pink: #FF9CF6;
+            --dr-green: #37FF52;
+            --dr-purple: #C27EFF;
+            --dr-yellow: #FFFF00;
+            --dr-grey: #444444;
+            --dr-light-grey: #999999;
+        }
+
+        body {
+            background-color: var(--dr-black);
+            color: var(--dr-white);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 20px;
+            -webkit-font-smoothing: none;
+            image-rendering: pixelated;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--dr-yellow);
+            text-align: center;
+            text-shadow: 2px 2px var(--dr-purple);
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--dr-light-grey);
+            font-size: 0.8em;
+            margin-bottom: 40px;
+        }
+
+        .characters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .character-card {
+            background-color: var(--dr-grey);
+            border: 2px solid var(--dr-white);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .character-card h2 {
+            margin: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--dr-white);
+            text-align: center;
+        }
+        #kris-header { color: var(--dr-cyan); }
+        #susie-header { color: var(--dr-purple); }
+        #ralsei-header { color: var(--dr-green); }
+        #noelle-header { color: var(--dr-pink); }
+        
+        .equip-group, .stats-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            color: var(--dr-yellow);
+        }
+
+        select {
+            background-color: var(--dr-black);
+            color: var(--dr-white);
+            border: 1px solid var(--dr-white);
+            padding: 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            width: 100%;
+        }
+
+        select option.unused-item {
+            color: var(--dr-light-grey);
+            font-style: italic;
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            text-align: center;
+            gap: 10px;
+        }
+
+        .stat {
+            background-color: #222;
+            padding: 10px 5px;
+            border: 1px solid #555;
+        }
+
+        .stat .label {
+            font-size: 0.8em;
+            color: var(--dr-light-grey);
+        }
+        
+        .stat .value {
+            font-size: 1.2em;
+        }
+
+        .effects-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            background-color: #1a1a1a;
+            border: 1px solid #555;
+            min-height: 80px;
+            padding: 10px;
+        }
+
+        .effects-list li {
+            font-size: 0.8em;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .effects-list li::before {
+           content: '*';
+           position: absolute;
+           left: 0;
+           color: var(--dr-yellow);
+       }
+
+       /* New styles for the checklist and results */
+       #item-selection {
+           margin-bottom: 30px;
+       }
+
+       #item-selection h2, #results-container h2 {
+           color: var(--dr-yellow);
+           text-align: center;
+           margin-bottom: 20px;
+       }
+
+       #weapon-checklist, #armor-checklist {
+           display: flex;
+           flex-direction: column;
+           gap: 10px;
+           margin-bottom: 20px;
+       }
+
+       .checklist-item {
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           padding: 5px;
+           border: 1px solid var(--dr-grey);
+       }
+
+       .checklist-item input[type="checkbox"] {
+           transform: scale(1.5);
+       }
+
+       #calculate-button {
+           display: block;
+           margin: 20px auto;
+           padding: 10px 20px;
+           background-color: var(--dr-purple);
+           color: var(--dr-white);
+           border: none;
+           font-family: 'Press Start 2P', cursive;
+           font-size: 16px;
+           cursor: pointer;
+       }
+
+       #calculate-button:hover {
+           background-color: #a066cc; /* Slightly darker purple for hover */
+       }
+
+       #results-container {
+           margin-top: 30px;
+       }
+
+       #results-container > div {
+           background-color: var(--dr-grey);
+           border: 2px solid var(--dr-white);
+           padding: 15px;
+           margin-bottom: 20px;
+       }
+
+       #results-container h3 {
+           color: var(--dr-cyan); /* Default color, will be overridden for each character */
+           margin-top: 0;
+           border-bottom: 1px solid var(--dr-white);
+           padding-bottom: 5px;
+       }
+
+       #susie-results h3 { color: var(--dr-purple); }
+       #ralsei-results h3 { color: var(--dr-green); }
+       #noelle-results h3 { color: var(--dr-pink); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Deltarune Ultimate Loadout Calculator</h1>
+        <p class="subtitle">Select equipment for each character to see their final stats and abilities.</p>
+
+        <div id="party-selection">
+            <h2>Select Your Party</h2>
+            <div>
+                <input type="checkbox" id="kris-party" name="kris-party" checked disabled>
+                <label for="kris-party">Kris (Always in party)</label>
+            </div>
+            <div>
+                <input type="checkbox" id="susie-party" name="susie-party">
+                <label for="susie-party">Susie</label>
+            </div>
+            <div>
+                <input type="checkbox" id="ralsei-party" name="ralsei-party">
+                <label for="ralsei-party">Ralsei</label>
+            </div>
+            <div>
+                <input type="checkbox" id="noelle-party" name="noelle-party">
+                <label for="noelle-party">Noelle</label>
+            </div>
+        </div>
+
+        <div id="item-selection">
+            <h2>Your Collected Items</h2>
+            <div id="weapon-checklist">
+                <h3>Weapons</h3>
+                <!-- Weapon checklist items will be populated here by JavaScript -->
+            </div>
+            <div id="armor-checklist">
+                <h3>Armor</h3>
+                <!-- Armor checklist items will be populated here by JavaScript -->
+            </div>
+            <button id="calculate-button">Calculate Optimal Loadouts</button>
+        </div>
+
+        <div id="results-container" style="display:none;">
+            <h2>Optimal Loadouts</h2>
+            <div id="kris-results">
+                <h3>Kris</h3>
+                <!-- Kris's results will be populated here -->
+            </div>
+            <div id="susie-results">
+                <h3>Susie</h3>
+                <!-- Susie's results will be populated here -->
+            </div>
+            <div id="ralsei-results">
+                <h3>Ralsei</h3>
+                <!-- Ralsei's results will be populated here -->
+            </div>
+            <div id="noelle-results">
+                <h3>Noelle</h3>
+                <!-- Noelle's results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const db = {
+        characters: {
+            kris: { name: 'Kris', base: { at: 10, df: 2, magic: 0 }, weaponType: 'Sword' },
+            susie: { name: 'Susie', base: { at: 14, df: 2, magic: 0 }, weaponType: 'Axe' },
+            ralsei: { name: 'Ralsei', base: { at: 10, df: 2, magic: 7 }, weaponType: 'Scarf' },
+            noelle: { name: 'Noelle', base: { at: 10, df: 1, magic: 2 }, weaponType: 'Ring' }
+        },
+        equipment: [
+            // --- WEAPONS ---
+            // Swords (Kris)
+            { name: "Wood Blade", type: "Weapon", weaponType: "Sword", stats: { at: 1 }, effects: [] },
+            { name: "Spookysword", type: "Weapon", weaponType: "Sword", stats: { at: 2 }, effects: ["Spookiness UP"] },
+            { name: "Mecha Saber", type: "Weapon", weaponType: "Sword", stats: { at: 4 }, effects: ["Annoying"] },
+            { name: "Bounce Blade", type: "Weapon", weaponType: "Sword", stats: { at: 2, df: 1 }, effects: [] },
+            { name: "Saber10", type: "Weapon", weaponType: "Sword", stats: { at: 6 }, effects: [] },
+            { name: "Jingle Blade", type: "Weapon", weaponType: "Sword", stats: { at: 7, df: 1 }, effects: ["Festive"] },
+            { name: "Winglade", type: "Weapon", weaponType: "Sword", stats: { at: 8 }, effects: ["$ +5%"] },
+            { name: "Black Shard", type: "Weapon", weaponType: "Sword", stats: { at: 16 }, effects: ["Effective vs Dark"] },
+            { name: "Trefoil", type: "Weapon", weaponType: "Sword", stats: { at: 4 }, effects: ["$ found +5%"], unused: true },
+            { name: "Twisted Sword", type: "Weapon", weaponType: "Sword", stats: { at: 16 }, effects: ["Trance Down (Non-functional)"], unused: true },
+
+            // Axes (Susie)
+            { name: "Mane Ax", type: "Weapon", weaponType: "Axe", stats: { at: 0 }, effects: [] },
+            { name: "Brave Ax", type: "Weapon", weaponType: "Axe", stats: { at: 2 }, effects: ["Guts UP"] },
+            { name: "Auto Axe", type: "Weapon", weaponType: "Axe", stats: { at: 4 }, effects: ["BadIdea"] },
+            { name: "Devilsknife", type: "Weapon", weaponType: "Axe", stats: { at: 5, magic: 4 }, effects: ["Buster TP DOWN (-10% cost)"] },
+            { name: "Toxic Axe", type: "Weapon", weaponType: "Axe", stats: { at: 6 }, effects: [] },
+            { name: "AbsorbAx", type: "Weapon", weaponType: "Axe", stats: { at: 8 }, effects: ["Vampire (HP steal)"] },
+            { name: "Justice Axe", type: "Weapon", weaponType: "Axe", stats: { at: 12 }, effects: ["Attainment strength"] },
+
+            // Scarves (Ralsei)
+            { name: "Red Scarf", type: "Weapon", weaponType: "Scarf", stats: { at: 0 }, effects: [] },
+            { name: "Ragger", type: "Weapon", weaponType: "Scarf", stats: { at: 2 }, effects: [] },
+            { name: "Dainty Scarf", type: "Weapon", weaponType: "Scarf", stats: { at: 0, magic: 2 }, effects: ["Fluffiness UP"] },
+            { name: "Fiber Scarf", type: "Weapon", weaponType: "Scarf", stats: { at: 2, magic: 2 }, effects: [] },
+            { name: "Flex Scarf", type: "Weapon", weaponType: "Scarf", stats: { at: 4, magic: 1 }, effects: [] },
+            { name: "Ragger2", type: "Weapon", weaponType: "Scarf", stats: { at: 5, magic: -1 }, effects: ["Prickly"] },
+            { name: "Puppet Scarf", type: "Weapon", weaponType: "Scarf", stats: { at: 10, magic: -6 }, effects: ["For those that abandon healing"] },
+            { name: "Cheer Scarf", type: "Weapon", weaponType: "Scarf", stats: { at: 1, magic: 2 }, effects: ["More TP from criticals"], unused: true },
+
+            // Rings (Noelle)
+            { name: "Snow Ring", type: "Weapon", weaponType: "Ring", stats: { at: 0, magic: 0 }, effects: [] },
+            { name: "Freeze Ring", type: "Weapon", weaponType: "Ring", stats: { at: 4, magic: 4 }, effects: [] },
+            { name: "Thorn Ring", type: "Weapon", weaponType: "Ring", stats: { at: 14, magic: 12 }, effects: ["Trance (HP drain)", "Ice Spell TP cost / 2"] },
+
+            // --- ARMOR --- (Character: null means equippable by all, unless special cased)
+            { name: "Bandage", type: "Armor", stats: { at: 0, df: 0 }, effects: [] },
+            { name: "White Ribbon", type: "Armor", stats: { df: 2 }, effects: ["Cuteness"], restrictedTo: ["Kris", "Ralsei", "Noelle"] },
+            { name: "Amber Card", type: "Armor", stats: { df: 1 }, effects: [] },
+            { name: "Dice Brace", type: "Armor", stats: { df: 2 }, effects: [] },
+            { name: "Iron Shackle", type: "Armor", stats: { at: 1, df: 2 }, effects: ["Ironically increases stats"] },
+            { name: "Jevilstail", type: "Armor", stats: { at: 2, df: 2, magic: 2 }, effects: ["Devilenergy"] },
+            { name: "Silver Card", type: "Armor", stats: { df: 2 }, effects: ["$ +5%"] },
+            { name: "Glow Wrist", type: "Armor", stats: { df: 2 }, effects: [] },
+            { name: "Silver Watch", type: "Armor", stats: { df: 2 }, effects: ["GrazeTime (Turn length -10%)"] },
+            { name: "Royal Pin", type: "Armor", stats: { df: 3, magic: 1 }, effects: [] },
+            { name: "Pink Ribbon", type: "Armor", stats: { df: 1 }, effects: ["GrazeArea +44%"] },
+            { name: "Mannequin", type: "Armor", stats: { df: 0 }, effects: ["-35% damage from Puppet/Cat"] },
+            { name: "B.ShotBowtie", type: "Armor", stats: { df: 2, magic: 1 }, effects: [] },
+            { name: "Chain Mail", type: "Armor", stats: { df: 3 }, effects: [] },
+            { name: "Frayed Bowtie", type: "Armor", stats: { at: 1, df: 1, magic: 1 }, effects: ["-15% damage from Puppet/Cat"] },
+            { name: "Dealmaker", type: "Armor", stats: { df: 5, magic: 5 }, effects: ["$ +30%", "-40% damage from Puppet/Cat"] },
+            { name: "Twin Ribbon", type: "Armor", stats: { df: 3 }, effects: ["GrazeArea +56.25%"] },
+            { name: "Spike Band", type: "Armor", stats: { at: 2, df: 1 }, effects: [] },
+            { name: "Tension Bow", type: "Armor", stats: { df: 2 }, effects: ["TPGain +10%"] },
+            { name: "TennaTie", type: "Armor", stats: { df: 5, magic: -2 }, effects: [] },
+            { name: "Shadow Mantle", type: "Armor", stats: { df: 1 }, effects: ["DF+1 per chapter", "-66% damage from Dark/Star"] },
+            { name: "MysticBand", type: "Armor", stats: { magic: 4 }, effects: [] },
+            { name: "PrincessRBN", type: "Armor", stats: { df: 4, at: 2 }, effects: ["Elegance UP"] },
+            { name: "Waferguard", type: "Armor", stats: { df: 4 }, effects: [] },
+            { name: "GoldWidow", type: "Armor", stats: { df: 5, at: 1, magic: 1 }, effects: ["$ -10%"] },
+            { name: "Mouse Token", type: "Armor", stats: { df: 1, magic: 2 }, effects: [], unused: true },
+            { name: "Sky Mantle", type: "Armor", stats: { df: 1 }, effects: ["-50% damage from Elec/Holy"], unused: true },
+            { name: "Spike Shackle", type: "Armor", stats: { at: 3, df: 1 }, effects: [], unused: true },
+        ]
+    };
+
+    // Function to populate the weapon and armor checklists
+    function populateChecklists() {
+        const weaponChecklist = document.getElementById('weapon-checklist');
+        const armorChecklist = document.getElementById('armor-checklist');
+        
+        // Clear existing content except the headers
+        weaponChecklist.innerHTML = '<h3>Weapons</h3>';
+        armorChecklist.innerHTML = '<h3>Armor</h3>';
+        
+        // Iterate through equipment and create checklist items
+        db.equipment.forEach((item, index) => {
+            // Create container div for the checkbox, label, and quantity input
+            const container = document.createElement('div');
+            container.className = 'checklist-item';
+            
+            // Create checkbox
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `item-${index}`;
+            checkbox.value = item.name;
+            checkbox.name = item.name;
+            
+            // Add data attributes for item properties
+            checkbox.dataset.at = item.stats.at || 0;
+            checkbox.dataset.df = item.stats.df || 0;
+            checkbox.dataset.magic = item.stats.magic || 0;
+            checkbox.dataset.type = item.type;
+            if (item.weaponType) {
+                checkbox.dataset.weaponType = item.weaponType;
+            }
+            if (item.restrictedTo) {
+                checkbox.dataset.restrictedTo = JSON.stringify(item.restrictedTo);
+            }
+            if (item.unused) {
+                checkbox.dataset.unused = true;
+            }
+            
+            // Create label
+            const label = document.createElement('label');
+            label.htmlFor = `item-${index}`;
+            label.textContent = item.name;
+            
+            // Create quantity input
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'number';
+            quantityInput.min = '1';
+            quantityInput.value = '1';
+            quantityInput.style.display = 'none';
+            quantityInput.className = 'quantity-input';
+            quantityInput.id = `quantity-${index}`;
+            
+            // Add event listener to show/hide quantity input
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    quantityInput.style.display = 'inline-block';
+                } else {
+                    quantityInput.style.display = 'none';
+                    quantityInput.value = '1'; // Reset to 1 when unchecked
+                }
+            });
+            
+            // Add elements to container
+            container.appendChild(checkbox);
+            container.appendChild(label);
+            container.appendChild(quantityInput);
+            
+            // Add to appropriate checklist
+            if (item.type === 'Weapon') {
+                weaponChecklist.appendChild(container);
+            } else if (item.type === 'Armor') {
+                armorChecklist.appendChild(container);
+            }
+        });
+    }
+    
+    // Call populateChecklists when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        populateChecklists();
+        
+        // Add event listener to the calculate button
+        document.getElementById('calculate-button').addEventListener('click', handleCalculation);
+    });
+
+    // Function to handle the calculation process
+    function handleCalculation() {
+        // Gather all checked items and create a pool based on quantities
+        const checkedItems = document.querySelectorAll('#item-selection input[type="checkbox"]:checked');
+        const availableItems = [];
+        
+        checkedItems.forEach(checkbox => {
+            // Get the index from the checkbox ID to find the corresponding quantity input
+            const index = checkbox.id.split('-')[1];
+            const quantityInput = document.getElementById(`quantity-${index}`);
+            const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
+            
+            // Create item object
+            const item = {
+                name: checkbox.value,
+                type: checkbox.dataset.type,
+                weaponType: checkbox.dataset.weaponType,
+                at: parseInt(checkbox.dataset.at) || 0,
+                df: parseInt(checkbox.dataset.df) || 0,
+                magic: parseInt(checkbox.dataset.magic) || 0,
+                restrictedTo: checkbox.dataset.restrictedTo ? JSON.parse(checkbox.dataset.restrictedTo) : null,
+                unused: checkbox.dataset.unused === 'true'
+            };
+            
+            // Add multiple instances of the item to the pool based on quantity
+            for (let i = 0; i < quantity; i++) {
+                availableItems.push({...item}); // Use spread to create a copy
+            }
+        });
+        
+        // Identify selected party members
+        const selectedParty = [];
+        if (document.getElementById('kris-party').checked) selectedParty.push('kris');
+        if (document.getElementById('susie-party').checked) selectedParty.push('susie');
+        if (document.getElementById('ralsei-party').checked) selectedParty.push('ralsei');
+        if (document.getElementById('noelle-party').checked) selectedParty.push('noelle');
+        
+        // Calculate optimal loadouts only for selected party members
+        const loadouts = calculateAllOptimalLoadouts(availableItems, selectedParty);
+        
+        // Display results
+        displayResults(loadouts, selectedParty);
+    }
+    
+    // Function to calculate optimal loadouts for all characters
+    function calculateAllOptimalLoadouts(availableItems, selectedParty) {
+        const loadouts = {};
+        // Create a working copy of available items
+        const availableItemsCopy = [...availableItems];
+
+        // Helper function to remove an item by reference from availableItemsCopy
+        function removeItem(item) {
+            const index = availableItemsCopy.indexOf(item);
+            if (index !== -1) {
+                availableItemsCopy.splice(index, 1);
+                return true;
+            }
+            return false;
+        }
+
+        // Only calculate loadouts for selected party members
+        for (const charKey of selectedParty) {
+            const character = db.characters[charKey];
+            const charLoadout = {
+                weapon: null,
+                armor1: null,
+                armor2: null,
+                totalStats: {
+                    at: character.base.at,
+                    df: character.base.df,
+                    magic: character.base.magic
+                }
+            };
+
+            // Find and assign the best weapon for this character
+            const bestWeapon = findBestItem(availableItemsCopy, 'Weapon', character.weaponType, character.name);
+            if (bestWeapon) {
+                charLoadout.weapon = bestWeapon;
+                charLoadout.totalStats.at += bestWeapon.at;
+                charLoadout.totalStats.df += bestWeapon.df;
+                charLoadout.totalStats.magic += bestWeapon.magic;
+                removeItem(bestWeapon);
+            }
+
+            // Find and assign the best armor for this character
+            const bestArmor1 = findBestItem(availableItemsCopy, 'Armor', null, character.name);
+            if (bestArmor1) {
+                charLoadout.armor1 = bestArmor1;
+                charLoadout.totalStats.at += bestArmor1.at;
+                charLoadout.totalStats.df += bestArmor1.df;
+                charLoadout.totalStats.magic += bestArmor1.magic;
+                removeItem(bestArmor1);
+            }
+
+            // Find and assign the second best armor for this character
+            const bestArmor2 = findBestItem(availableItemsCopy, 'Armor', null, character.name);
+            if (bestArmor2) {
+                charLoadout.armor2 = bestArmor2;
+                charLoadout.totalStats.at += bestArmor2.at;
+                charLoadout.totalStats.df += bestArmor2.df;
+                charLoadout.totalStats.magic += bestArmor2.magic;
+                removeItem(bestArmor2);
+            }
+
+            loadouts[charKey] = charLoadout;
+        }
+
+        return loadouts;
+    }
+    
+    // Helper function to find the best item of a specific type for a character
+    function findBestItem(availableItems, type, weaponType, characterName, excludeName = null) {
+        let bestItem = null;
+        let bestValue = -1;
+        
+        availableItems.forEach(item => {
+            // Skip if excluding this item
+            if (item.name === excludeName) return;
+            
+            // Check if item matches type
+            if (item.type !== type) return;
+            
+            // For weapons, check if it matches the character's weapon type
+            if (type === 'Weapon' && item.weaponType !== weaponType) return;
+            
+            // Check if item is restricted to specific characters
+            if (item.restrictedTo && !item.restrictedTo.includes(characterName)) return;
+            
+            // Calculate value based on item type (AT for weapons, DF for armor)
+            let value;
+            if (type === 'Weapon') {
+                value = item.at; // Maximize AT for weapons
+            } else {
+                value = item.df; // Maximize DF for armor
+            }
+            
+            // Update best item if this one is better
+            if (value > bestValue) {
+                bestValue = value;
+                bestItem = item;
+            }
+        });
+        
+        return bestItem;
+    }
+    
+    // Function to display the calculated results
+    function displayResults(loadouts, selectedParty) {
+        // Define all character keys
+        const allCharacters = ['kris', 'susie', 'ralsei', 'noelle'];
+        
+        // Iterate through all characters
+        for (const charKey of allCharacters) {
+            const resultsContainer = document.getElementById(`${charKey}-results`);
+            
+            // Check if character is in the selected party
+            if (selectedParty.includes(charKey)) {
+                // Character is in party, display their loadout
+                const loadout = loadouts[charKey];
+                
+                // Clear existing content
+                resultsContainer.innerHTML = `<h3>${db.characters[charKey].name}</h3>`;
+                
+                // Create and populate results content
+                const weaponName = loadout.weapon ? loadout.weapon.name : 'None';
+                const armor1Name = loadout.armor1 ? loadout.armor1.name : 'None';
+                const armor2Name = loadout.armor2 ? loadout.armor2.name : 'None';
+                
+                const statsHTML = `
+                    <p><strong>Weapon:</strong> ${weaponName}</p>
+                    <p><strong>Armor 1:</strong> ${armor1Name}</p>
+                    <p><strong>Armor 2:</strong> ${armor2Name}</p>
+                    <div class="stats-display">
+                        <div class="stat">
+                            <div class="label">AT</div>
+                            <div class="value">${loadout.totalStats.at}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="label">DF</div>
+                            <div class="value">${loadout.totalStats.df}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="label">MG</div>
+                            <div class="value">${loadout.totalStats.magic}</div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsContainer.innerHTML += statsHTML;
+                resultsContainer.style.display = 'block'; // Show the container
+            } else {
+                // Character is not in party, hide their results
+                resultsContainer.style.display = 'none';
+            }
+        }
+        
+        // Show the results container
+        document.getElementById('results-container').style.display = 'block';
+    }
+</script>
+</body>
+</html>
