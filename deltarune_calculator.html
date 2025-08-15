@@ -405,7 +405,7 @@
             quantityInput.className = 'quantity-input';
             quantityInput.id = `quantity-${index}`;
             
-            // Add event listener to show/hide quantity input
+            // Add event listener to show/hide quantity input (without saving state)
             checkbox.addEventListener('change', function() {
                 if (this.checked) {
                     quantityInput.style.display = 'inline-block';
@@ -429,12 +429,94 @@
         });
     }
     
+    // Function to save the current state to localStorage
+    function saveStateToLocalStorage() {
+        const state = {
+            party: {},
+            items: {}
+        };
+        
+        // Save party member checkbox states
+        const partyCheckboxes = document.querySelectorAll('#party-selection input[type="checkbox"]');
+        partyCheckboxes.forEach(checkbox => {
+            state.party[checkbox.id] = checkbox.checked;
+        });
+        
+        // Save item checkbox states and quantities
+        const itemCheckboxes = document.querySelectorAll('#item-selection input[type="checkbox"]');
+        itemCheckboxes.forEach(checkbox => {
+            const index = checkbox.id.split('-')[1];
+            state.items[checkbox.id] = {
+                checked: checkbox.checked,
+                quantity: document.getElementById(`quantity-${index}`)?.value || '1'
+            };
+        });
+        
+        localStorage.setItem('deltaruneLoadoutCalculatorState', JSON.stringify(state));
+    }
+    
+    // Function to load the state from localStorage
+    function loadStateFromLocalStorage() {
+        const savedState = localStorage.getItem('deltaruneLoadoutCalculatorState');
+        if (!savedState) return;
+        
+        const state = JSON.parse(savedState);
+        
+        // Load party member checkbox states
+        for (const [id, checked] of Object.entries(state.party)) {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.checked = checked;
+            }
+        }
+        
+        // Load item checkbox states and quantities
+        for (const [id, itemState] of Object.entries(state.items)) {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.checked = itemState.checked;
+                
+                // Get the index to find the corresponding quantity input
+                const index = id.split('-')[1];
+                const quantityInput = document.getElementById(`quantity-${index}`);
+                
+                if (quantityInput) {
+                    quantityInput.value = itemState.quantity;
+                    
+                    // Show quantity input if checkbox is checked
+                    if (itemState.checked) {
+                        quantityInput.style.display = 'inline-block';
+                    }
+                }
+            }
+        }
+    }
+    
     // Call populateChecklists when the page loads
     document.addEventListener('DOMContentLoaded', function() {
         populateChecklists();
         
+        // Load saved state from localStorage
+        loadStateFromLocalStorage();
+        
+        // Add event listeners to party member checkboxes
+        const partyCheckboxes = document.querySelectorAll('#party-selection input[type="checkbox"]');
+        partyCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                saveStateToLocalStorage(); // Save state when party checkbox changes
+            });
+        });
+        
         // Add event listener to the calculate button
         document.getElementById('calculate-button').addEventListener('click', handleCalculation);
+        
+        // Add event listeners to all item quantity inputs
+        const quantityInputs = document.querySelectorAll('.quantity-input');
+        quantityInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                saveStateToLocalStorage(); // Save state when quantity changes
+            });
+        });
     });
 
     // Function to handle the calculation process
