@@ -413,6 +413,7 @@
                     quantityInput.style.display = 'none';
                     quantityInput.value = '1'; // Reset to 1 when unchecked
                 }
+                saveStateToLocalStorage(); // Save state when checkbox is toggled
             });
             
             // Add elements to container
