@@ -213,14 +213,15 @@
 
        #susie-results h3 { color: var(--dr-purple); }
        #ralsei-results h3 { color: var(--dr-green); }
-       #loadout-customization {
+
+       #character-priority-section {
            background-color: var(--dr-grey);
            border: 2px solid var(--dr-white);
            padding: 15px;
            margin-bottom: 20px;
        }
 
-       #loadout-customization h2 {
+       #character-priority-section h2 {
            color: var(--dr-yellow);
            text-align: center;
            margin-top: 0;
@@ -229,7 +230,7 @@
            border-bottom: 1px solid var(--dr-white);
        }
 
-       #priority-presets {
+       #character-select {
            width: 100%;
            margin-bottom: 15px;
            background-color: var(--dr-black);
@@ -240,21 +241,39 @@
            font-size: 12px;
        }
 
-       #loadout-customization div {
+       #priority-controls-container > div {
+           background-color: var(--dr-black);
+           border: 1px solid var(--dr-white);
+           padding: 10px;
+           margin-bottom: 15px;
+       }
+
+       #priority-controls-container select {
+           width: 100%;
+           margin-bottom: 15px;
+           background-color: var(--dr-black);
+           color: var(--dr-white);
+           border: 1px solid var(--dr-white);
+           padding: 8px;
+           font-family: 'Press Start 2P', cursive;
+           font-size: 12px;
+       }
+
+       #priority-controls-container div {
            margin-bottom: 10px;
        }
 
-       #loadout-customization label {
+       #priority-controls-container label {
            display: block;
            margin-bottom: 5px;
            color: var(--dr-cyan);
        }
 
-       #loadout-customization input[type="range"] {
+       #priority-controls-container input[type="range"] {
            width: 100%;
        }
 
-       #reset-priorities {
+       #priority-controls-container button {
            display: block;
            margin: 15px auto 0;
            padding: 8px 15px;
@@ -266,11 +285,11 @@
            cursor: pointer;
        }
 
-       #reset-priorities:hover {
+       #priority-controls-container button:hover {
            background-color: #a066cc;
        }
 
-       #loadout-customization span {
+       #priority-controls-container span {
            color: var(--dr-yellow);
        }
     </style>
@@ -301,6 +320,42 @@
             </div>
         </div>
 
+        <div id="character-priority-section">
+            <h2>Set Individual Character Priorities</h2>
+            <select id="character-select" title="Select Character">
+                <option value="kris">Kris</option>
+                <option value="susie">Susie</option>
+                <option value="ralsei">Ralsei</option>
+                <option value="noelle">Noelle</option>
+            </select>
+            <div id="priority-controls-container">
+                <!-- Dynamic priority controls will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <div id="priority-controls-template" style="display: none;">
+            <select class="priority-presets" title="Loadout Priority Presets">
+                <option value="balanced">Balanced</option>
+                <option value="offensive">Offensive</option>
+                <option value="defensive">Defensive</option>
+                <option value="magic">Magic-focused</option>
+                <option value="custom">Custom</option>
+            </select>
+            <div>
+                <label for="priority-at">AT: <span class="priority-at-value">40</span>%</label>
+                <input type="range" class="priority-at" min="0" max="100" value="40">
+            </div>
+            <div>
+                <label for="priority-df">DF: <span class="priority-df-value">40</span>%</label>
+                <input type="range" class="priority-df" min="0" max="100" value="40">
+            </div>
+            <div>
+                <label for="priority-magic">Magic: <span class="priority-magic-value">20</span>%</label>
+                <input type="range" class="priority-magic" min="0" max="100" value="20">
+            </div>
+            <button class="reset-priorities">Reset to Default</button>
+        </div>
+
         <div id="item-selection">
             <h2>Your Collected Items</h2>
             <div id="weapon-checklist">
@@ -310,29 +365,6 @@
             <div id="armor-checklist">
                 <h3>Armor</h3>
                 <!-- Armor checklist items will be populated here by JavaScript -->
-            </div>
-            <div id="loadout-customization">
-                <h2>Customize Your Loadout Priorities</h2>
-                <select id="priority-presets" title="Loadout Priority Presets">
-                    <option value="balanced">Balanced</option>
-                    <option value="offensive">Offensive</option>
-                    <option value="defensive">Defensive</option>
-                    <option value="magic">Magic-focused</option>
-                    <option value="custom">Custom</option>
-                </select>
-                <div>
-                    <label for="priority-at">AT: <span id="priority-at-value">40</span>%</label>
-                    <input type="range" id="priority-at" min="0" max="100" value="40">
-                </div>
-                <div>
-                    <label for="priority-df">DF: <span id="priority-df-value">40</span>%</label>
-                    <input type="range" id="priority-df" min="0" max="100" value="40">
-                </div>
-                <div>
-                    <label for="priority-magic">Magic: <span id="priority-magic-value">20</span>%</label>
-                    <input type="range" id="priority-magic" min="0" max="100" value="20">
-                </div>
-                <button id="reset-priorities">Reset to Default</button>
             </div>
             <button id="calculate-button">Calculate Optimal Loadouts</button>
             <div id="loading-indicator" style="display: none; text-align: center; margin-top: 10px;">
@@ -440,14 +472,44 @@
     };
 
     // Priority data management
-    let currentPriorities = { at: 40, df: 40, magic: 20 }; // Initialize with "Balanced" preset
+    const characterPriorities = {
+        kris: { at: 40, df: 40, magic: 20 },
+        susie: { at: 40, df: 40, magic: 20 },
+        ralsei: { at: 40, df: 40, magic: 20 },
+        noelle: { at: 40, df: 40, magic: 20 }
+    };
 
     const priorityPresets = {
-        'balanced': { at: 40, df: 40, magic: 20 },
-        'offensive': { at: 70, df: 20, magic: 10 },
-        'defensive': { at: 20, df: 70, magic: 10 },
-        'magic': { at: 10, df: 20, magic: 70 },
-        'custom': { at: 0, df: 0, magic: 0 } // Default custom values
+        'balanced': {
+            kris: { at: 40, df: 40, magic: 20 },
+            susie: { at: 40, df: 40, magic: 20 },
+            ralsei: { at: 40, df: 40, magic: 20 },
+            noelle: { at: 40, df: 40, magic: 20 }
+        },
+        'offensive': {
+            kris: { at: 70, df: 20, magic: 10 },
+            susie: { at: 70, df: 20, magic: 10 },
+            ralsei: { at: 70, df: 20, magic: 10 },
+            noelle: { at: 70, df: 20, magic: 10 }
+        },
+        'defensive': {
+            kris: { at: 20, df: 70, magic: 10 },
+            susie: { at: 20, df: 70, magic: 10 },
+            ralsei: { at: 20, df: 70, magic: 10 },
+            noelle: { at: 20, df: 70, magic: 10 }
+        },
+        'magic': {
+            kris: { at: 10, df: 20, magic: 70 },
+            susie: { at: 10, df: 20, magic: 70 },
+            ralsei: { at: 10, df: 20, magic: 70 },
+            noelle: { at: 10, df: 20, magic: 70 }
+        },
+        'custom': {
+            kris: { at: 0, df: 0, magic: 0 },
+            susie: { at: 0, df: 0, magic: 0 },
+            ralsei: { at: 0, df: 0, magic: 0 },
+            noelle: { at: 0, df: 0, magic: 0 }
+        }
     };
 
     // Function to normalize priorities so they sum to 1
@@ -472,6 +534,157 @@
             score += loadout.totalStats[stat] * priorities[stat];
         }
         return score;
+    }
+    
+    // Helper function to find the best item for a specific slot
+    function findBestItemForSlot(availableItems, slotType, character, priorities) {
+        // Filter items based on slot type
+        let validItems = [];
+        if (slotType === 'weapon') {
+            validItems = availableItems.filter(item =>
+                item.type === 'Weapon' &&
+                item.weaponType === character.weaponType &&
+                (!item.restrictedTo || item.restrictedTo.includes(character.name))
+            );
+        } else if (slotType === 'armor1' || slotType === 'armor2') {
+            validItems = availableItems.filter(item =>
+                item.type === 'Armor' &&
+                (!item.restrictedTo || item.restrictedTo.includes(character.name))
+            );
+        }
+        
+        // If no valid items, return null
+        if (validItems.length === 0) {
+            return null;
+        }
+        
+        // Check if all priorities for usable stats are zero
+        let allZero = true;
+        for (const stat of character.usableStats) {
+            if (priorities[stat] > 0) {
+                allZero = false;
+                break;
+            }
+        }
+        
+        // If all priorities are zero, find item with highest combined usable stats
+        if (allZero) {
+            let bestItem = validItems[0];
+            let bestScore = 0;
+            
+            for (const stat of character.usableStats) {
+                bestScore += bestItem[stat] || 0;
+            }
+            
+            for (let i = 1; i < validItems.length; i++) {
+                let score = 0;
+                for (const stat of character.usableStats) {
+                    score += validItems[i][stat] || 0;
+                }
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestItem = validItems[i];
+                }
+            }
+            
+            return bestItem;
+        }
+        
+        // Otherwise, find the item that maximizes the weighted score based on priorities
+        let bestItem = validItems[0];
+        let bestScore = 0;
+        
+        // Calculate score for first item
+        for (const stat of character.usableStats) {
+            if (priorities[stat] > 0) {
+                bestScore += (bestItem[stat] || 0) * priorities[stat];
+            }
+        }
+        
+        // Compare with other items
+        for (let i = 1; i < validItems.length; i++) {
+            let score = 0;
+            for (const stat of character.usableStats) {
+                if (priorities[stat] > 0) {
+                    score += (validItems[i][stat] || 0) * priorities[stat];
+                }
+            }
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestItem = validItems[i];
+            }
+        }
+        
+        return bestItem;
+    }
+    
+    // Function to calculate optimal loadouts for all characters with priorities
+    function calculateOptimalLoadoutsWithPriorities(availableItems, allCharacterPriorities, partyMembers) {
+        // Create a working copy of the available items
+        let currentPool = [...availableItems];
+        const loadouts = {};
+    
+        // Only calculate loadouts for selected party members
+        for (const charKey of partyMembers) {
+            const character = db.characters[charKey];
+            
+            // Get character-specific priorities and normalize them
+            const rawPriorities = allCharacterPriorities[charKey];
+            const normalizedPriorities = normalizePriorities(rawPriorities);
+            
+            // Find the best weapon for this character
+            const bestWeapon = findBestItemForSlot(currentPool, 'weapon', character, normalizedPriorities);
+            
+            // Create a pool without the weapon (if found)
+            let poolWithoutWeapon = currentPool;
+            if (bestWeapon) {
+                poolWithoutWeapon = currentPool.filter(item => item !== bestWeapon);
+            }
+            
+            // Find the best first armor for this character
+            const bestArmor1 = findBestItemForSlot(poolWithoutWeapon, 'armor1', character, normalizedPriorities);
+            
+            // Create a pool without the weapon and first armor (if found)
+            let poolWithoutWeaponAndArmor1 = poolWithoutWeapon;
+            if (bestArmor1) {
+                poolWithoutWeaponAndArmor1 = poolWithoutWeapon.filter(item => item !== bestArmor1);
+            }
+            
+            // Find the best second armor for this character
+            const bestArmor2 = findBestItemForSlot(poolWithoutWeaponAndArmor1, 'armor2', character, normalizedPriorities);
+            
+            // Create the loadout
+            const loadout = {
+                weapon: bestWeapon,
+                armor1: bestArmor1,
+                armor2: bestArmor2,
+                totalStats: {
+                    at: character.base.at + (bestWeapon?.at || 0) + (bestArmor1?.at || 0) + (bestArmor2?.at || 0),
+                    df: character.base.df + (bestWeapon?.df || 0) + (bestArmor1?.df || 0) + (bestArmor2?.df || 0),
+                    magic: character.base.magic + (bestWeapon?.magic || 0) + (bestArmor1?.magic || 0) + (bestArmor2?.magic || 0)
+                }
+            };
+            
+            // Remove the assigned items from the current pool
+            if (bestWeapon) {
+                const weaponIndex = currentPool.indexOf(bestWeapon);
+                if (weaponIndex !== -1) currentPool.splice(weaponIndex, 1);
+            }
+            if (bestArmor1) {
+                const armor1Index = currentPool.indexOf(bestArmor1);
+                if (armor1Index !== -1) currentPool.splice(armor1Index, 1);
+            }
+            if (bestArmor2) {
+                const armor2Index = currentPool.indexOf(bestArmor2);
+                if (armor2Index !== -1) currentPool.splice(armor2Index, 1);
+            }
+            
+            loadouts[charKey] = loadout;
+        }
+    
+        return loadouts;
     }
     
     // Function to populate the weapon and armor checklists
@@ -555,7 +768,7 @@
         const state = {
             party: {},
             items: {},
-            priorities: currentPriorities
+            priorities: characterPriorities
         };
         
         // Save party member checkbox states
@@ -615,8 +828,14 @@
         
         // Load priority data if available
         if (state.priorities) {
-            currentPriorities = {...state.priorities};
-            updatePriorityUI();
+            // Load character priorities
+            for (const [character, priorities] of Object.entries(state.priorities)) {
+                if (characterPriorities[character]) {
+                    characterPriorities[character] = {...priorities};
+                }
+            }
+            // Update UI for currently selected character
+            updatePriorityControls();
         }
     }
     
@@ -653,47 +872,121 @@
         updatePriorityUI();
     });
 
+    // Function to update priority controls based on selected character
+    function updatePriorityControls() {
+        const selectedCharacter = document.getElementById('character-select').value;
+        const container = document.getElementById('priority-controls-container');
+        
+        // Clear the container
+        container.innerHTML = '';
+        
+        // Clone the template and append to container
+        const template = document.getElementById('priority-controls-template');
+        const clonedTemplate = template.cloneNode(true);
+        clonedTemplate.style.display = 'block';
+        clonedTemplate.removeAttribute('id');
+        container.appendChild(clonedTemplate);
+        
+        // Get the character's priorities
+        const priorities = characterPriorities[selectedCharacter];
+        
+        // Update the controls with the character's priorities
+        const priorityControls = container.querySelector('.priority-presets');
+        const atSlider = container.querySelector('.priority-at');
+        const dfSlider = container.querySelector('.priority-df');
+        const magicSlider = container.querySelector('.priority-magic');
+        const atValue = container.querySelector('.priority-at-value');
+        const dfValue = container.querySelector('.priority-df-value');
+        const magicValue = container.querySelector('.priority-magic-value');
+        
+        // Set slider values
+        atSlider.value = priorities.at;
+        dfSlider.value = priorities.df;
+        magicSlider.value = priorities.magic;
+        
+        // Set display values
+        atValue.textContent = priorities.at;
+        dfValue.textContent = priorities.df;
+        magicValue.textContent = priorities.magic;
+        
+        // Set preset dropdown to "Custom" by default
+        priorityControls.value = 'custom';
+        
+        // Update preset dropdown to match current priorities if they match a preset
+        updatePresetDropdownForCharacter(selectedCharacter);
+    }
+    
+    // Function to update the preset dropdown to match current priorities if they match a preset
+    function updatePresetDropdownForCharacter(character) {
+        const container = document.getElementById('priority-controls-container');
+        const presetDropdown = container.querySelector('.priority-presets');
+        const priorities = characterPriorities[character];
+        let foundMatch = false;
+        
+        for (const [presetName, presetValues] of Object.entries(priorityPresets)) {
+            if (priorities.at === presetValues[character].at &&
+                priorities.df === presetValues[character].df &&
+                priorities.magic === presetValues[character].magic) {
+                presetDropdown.value = presetName;
+                foundMatch = true;
+                break;
+            }
+        }
+        
+        // If no match found, set to Custom
+        if (!foundMatch) {
+            presetDropdown.value = 'custom';
+        }
+    }
+    
     // Function to set up event listeners for priority controls
     function setupPriorityEventListeners() {
-        // Event listener for priority presets dropdown
-        document.getElementById('priority-presets').addEventListener('change', function() {
-            const selectedPreset = this.value;
-            const presetName = this.options[this.selectedIndex].text;
+        // Event listener for character selection dropdown
+        document.getElementById('character-select').addEventListener('change', updatePriorityControls);
+        
+        // Event delegation for dynamically created controls
+        document.getElementById('priority-controls-container').addEventListener('change', function(e) {
+            const selectedCharacter = document.getElementById('character-select').value;
             
-            if (priorityPresets[presetName]) {
-                currentPriorities = {...priorityPresets[presetName]};
-                updatePriorityUI();
+            // Handle preset dropdown change
+            if (e.target.classList.contains('priority-presets')) {
+                const selectedPreset = e.target.value;
+                
+                if (priorityPresets[selectedPreset]) {
+                    characterPriorities[selectedCharacter] = {...priorityPresets[selectedPreset][selectedCharacter]};
+                    updatePriorityControls();
+                    saveStateToLocalStorage();
+                }
+            }
+            
+            // Handle slider changes
+            if (e.target.classList.contains('priority-at')) {
+                characterPriorities[selectedCharacter].at = parseInt(e.target.value);
+                updatePriorityControls();
+                saveStateToLocalStorage();
+            }
+            
+            if (e.target.classList.contains('priority-df')) {
+                characterPriorities[selectedCharacter].df = parseInt(e.target.value);
+                updatePriorityControls();
+                saveStateToLocalStorage();
+            }
+            
+            if (e.target.classList.contains('priority-magic')) {
+                characterPriorities[selectedCharacter].magic = parseInt(e.target.value);
+                updatePriorityControls();
                 saveStateToLocalStorage();
             }
         });
         
-        // Event listeners for sliders
-        document.getElementById('priority-at').addEventListener('input', function() {
-            currentPriorities.at = parseInt(this.value);
-            updatePriorityDisplay();
-            setPresetToCustom();
-            saveStateToLocalStorage();
-        });
-        
-        document.getElementById('priority-df').addEventListener('input', function() {
-            currentPriorities.df = parseInt(this.value);
-            updatePriorityDisplay();
-            setPresetToCustom();
-            saveStateToLocalStorage();
-        });
-        
-        document.getElementById('priority-magic').addEventListener('input', function() {
-            currentPriorities.magic = parseInt(this.value);
-            updatePriorityDisplay();
-            setPresetToCustom();
-            saveStateToLocalStorage();
-        });
-        
-        // Event listener for reset button
-        document.getElementById('reset-priorities').addEventListener('click', function() {
-            currentPriorities = {...priorityPresets['Balanced']};
-            updatePriorityUI();
-            saveStateToLocalStorage();
+        // Event delegation for reset button
+        document.getElementById('priority-controls-container').addEventListener('click', function(e) {
+            if (e.target.classList.contains('reset-priorities')) {
+                const selectedCharacter = document.getElementById('character-select').value;
+                characterPriorities[selectedCharacter] = {...priorityPresets['balanced'][selectedCharacter]};
+                updatePriorityControls();
+                saveStateToLocalStorage();
+            }
         });
     }
     
@@ -789,12 +1082,6 @@
             }
         });
         
-        // Get current priorities
-        const rawPriorities = {...currentPriorities};
-        
-        // Normalize the priorities
-        const normalizedPriorities = normalizePriorities(rawPriorities);
-        
         // Identify selected party members
         const selectedParty = [];
         if (document.getElementById('kris-party').checked) selectedParty.push('kris');
@@ -805,7 +1092,7 @@
         // Use setTimeout to make the calculation non-blocking
         setTimeout(() => {
             // Calculate optimal loadouts only for selected party members using the new algorithm
-            const loadouts = calculateOptimalLoadoutsWithPriorities(availableItems, normalizedPriorities, selectedParty);
+            const loadouts = calculateOptimalLoadoutsWithPriorities(availableItems, characterPriorities, selectedParty);
             
             // Display results
             displayResults(loadouts, selectedParty);
@@ -825,97 +1112,54 @@
         for (const charKey of partyMembers) {
             const character = db.characters[charKey];
             
-            // Find all valid weapons for this character from the current pool
-            const validWeapons = currentPool.filter(item =>
-                item.type === 'Weapon' &&
-                item.weaponType === character.weaponType &&
-                (!item.restrictedTo || item.restrictedTo.includes(character.name))
-            );
+            // Find the best weapon for this character
+            const bestWeapon = findBestItemForSlot(currentPool, 'weapon', character, priorities);
             
-            // Find all valid armors for this character from the current pool
-            const validArmors = currentPool.filter(item =>
-                item.type === 'Armor' &&
-                (!item.restrictedTo || item.restrictedTo.includes(character.name))
-            );
-            
-            let bestLoadout = null;
-            let bestScore = -1;
-            
-            // Try all combinations of weapons and 2 armors
-            for (const weapon of validWeapons) {
-                // Create a set of used items for this iteration
-                const usedItems = new Set([weapon]);
-                
-                // Try all combinations of 2 armors
-                for (let i = 0; i < validArmors.length; i++) {
-                    const armor1 = validArmors[i];
-                    // Skip if this armor is the same as the weapon or already used
-                    if (usedItems.has(armor1)) continue;
-                    
-                    // Add the first armor to used items for this iteration
-                    usedItems.add(armor1);
-                    
-                    for (let j = i + 1; j < validArmors.length; j++) {
-                        const armor2 = validArmors[j];
-                        // Skip if this armor is the same as the weapon or the first armor or already used
-                        if (usedItems.has(armor2)) continue;
-                        
-                        // Create a potential loadout
-                        const loadout = {
-                            weapon: weapon,
-                            armor1: armor1,
-                            armor2: armor2,
-                            totalStats: {
-                                at: character.base.at + weapon.at + armor1.at + armor2.at,
-                                df: character.base.df + weapon.df + armor1.df + armor2.df,
-                                magic: character.base.magic + weapon.magic + armor1.magic + armor2.magic
-                            }
-                        };
-                        
-                        // Calculate the score for this loadout
-                        const score = calculateLoadoutScore(loadout, priorities, character);
-                        
-                        // Update best loadout if this one is better
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestLoadout = loadout;
-                        }
-                    }
-                    
-                    // Remove the first armor from used items for next iteration
-                    usedItems.delete(armor1);
-                }
+            // Create a pool without the weapon (if found)
+            let poolWithoutWeapon = currentPool;
+            if (bestWeapon) {
+                poolWithoutWeapon = currentPool.filter(item => item !== bestWeapon);
             }
             
-            // If no valid loadout was found, create an empty one
-            if (!bestLoadout) {
-                bestLoadout = {
-                    weapon: null,
-                    armor1: null,
-                    armor2: null,
-                    totalStats: {
-                        at: character.base.at,
-                        df: character.base.df,
-                        magic: character.base.magic
-                    }
-                };
-            } else {
-                // Remove the assigned items from the current pool
-                if (bestLoadout.weapon) {
-                    const weaponIndex = currentPool.indexOf(bestLoadout.weapon);
-                    if (weaponIndex !== -1) currentPool.splice(weaponIndex, 1);
-                }
-                if (bestLoadout.armor1) {
-                    const armor1Index = currentPool.indexOf(bestLoadout.armor1);
-                    if (armor1Index !== -1) currentPool.splice(armor1Index, 1);
-                }
-                if (bestLoadout.armor2) {
-                    const armor2Index = currentPool.indexOf(bestLoadout.armor2);
-                    if (armor2Index !== -1) currentPool.splice(armor2Index, 1);
-                }
+            // Find the best first armor for this character
+            const bestArmor1 = findBestItemForSlot(poolWithoutWeapon, 'armor1', character, priorities);
+            
+            // Create a pool without the weapon and first armor (if found)
+            let poolWithoutWeaponAndArmor1 = poolWithoutWeapon;
+            if (bestArmor1) {
+                poolWithoutWeaponAndArmor1 = poolWithoutWeapon.filter(item => item !== bestArmor1);
             }
             
-            loadouts[charKey] = bestLoadout;
+            // Find the best second armor for this character
+            const bestArmor2 = findBestItemForSlot(poolWithoutWeaponAndArmor1, 'armor2', character, priorities);
+            
+            // Create the loadout
+            const loadout = {
+                weapon: bestWeapon,
+                armor1: bestArmor1,
+                armor2: bestArmor2,
+                totalStats: {
+                    at: character.base.at + (bestWeapon?.at || 0) + (bestArmor1?.at || 0) + (bestArmor2?.at || 0),
+                    df: character.base.df + (bestWeapon?.df || 0) + (bestArmor1?.df || 0) + (bestArmor2?.df || 0),
+                    magic: character.base.magic + (bestWeapon?.magic || 0) + (bestArmor1?.magic || 0) + (bestArmor2?.magic || 0)
+                }
+            };
+            
+            // Remove the assigned items from the current pool
+            if (bestWeapon) {
+                const weaponIndex = currentPool.indexOf(bestWeapon);
+                if (weaponIndex !== -1) currentPool.splice(weaponIndex, 1);
+            }
+            if (bestArmor1) {
+                const armor1Index = currentPool.indexOf(bestArmor1);
+                if (armor1Index !== -1) currentPool.splice(armor1Index, 1);
+            }
+            if (bestArmor2) {
+                const armor2Index = currentPool.indexOf(bestArmor2);
+                if (armor2Index !== -1) currentPool.splice(armor2Index, 1);
+            }
+            
+            loadouts[charKey] = loadout;
         }
     
         return loadouts;
