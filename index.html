@@ -1,3 +1,9 @@
+<!--
+ * @file index.html
+ * @author Stavrianos Galben
+ * @date 2025-09-03
+ * @desc Main interface for Deltarune Ultimate Loadout Calculator
+ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -394,7 +400,8 @@
     </div>
 
     <script>
-    const db = {
+    // Stores all game data including characters and equipment
+    const gameDatabase = {
         characters: {
             kris: { name: 'Kris', base: { at: 10, df: 2, magic: 0 }, weaponType: 'Sword', usableStats: ['at', 'df'] },
             susie: { name: 'Susie', base: { at: 14, df: 2, magic: 0 }, weaponType: 'Axe', usableStats: ['at', 'df'] },
@@ -471,15 +478,16 @@
         ]
     };
 
-    // Priority data management
-    const characterPriorities = {
+    // Manages character stat priority weights
+    const characterPriorityWeights = {
         kris: { at: 40, df: 40, magic: 20 },
         susie: { at: 40, df: 40, magic: 20 },
         ralsei: { at: 40, df: 40, magic: 20 },
         noelle: { at: 40, df: 40, magic: 20 }
     };
 
-    const priorityPresets = {
+    // Defines preset priority weight configurations
+    const priorityWeightPresets = {
         'balanced': {
             kris: { at: 40, df: 40, magic: 20 },
             susie: { at: 40, df: 40, magic: 20 },
@@ -512,8 +520,8 @@
         }
     };
 
-    // Function to normalize priorities so they sum to 1
-    function normalizePriorities(rawPriorities) {
+    // Normalizes priority weights so they sum to 1
+    function normalizePriorityWeights(rawPriorities) {
         const total = rawPriorities.at + rawPriorities.df + rawPriorities.magic;
         if (total === 0) {
             // If all priorities are 0, return equal weights
@@ -526,8 +534,8 @@
         };
     }
     
-    // Function to calculate the score of a loadout based on priorities
-    function calculateLoadoutScore(loadout, priorities, character) {
+    // Calculates loadout score based on priority weights and character stats
+    function calculateLoadoutScore(loadout, priorityWeights, character) {
         // Only consider stats that the character can use
         let score = 0;
         for (const stat of character.usableStats) {
@@ -536,8 +544,8 @@
         return score;
     }
     
-    // Helper function to find the best item for a specific slot
-    function findBestItemForSlot(availableItems, slotType, character, priorities) {
+    // Finds optimal item for given slot based on priority weights
+    function findOptimalItemForSlot(availableItems, slotType, character, priorityWeights) {
         // Filter items based on slot type
         let validItems = [];
         if (slotType === 'weapon') {
@@ -620,22 +628,22 @@
         return bestItem;
     }
     
-    // Function to calculate optimal loadouts for all characters with priorities
-    function calculateOptimalLoadoutsWithPriorities(availableItems, allCharacterPriorities, partyMembers) {
+    // Calculates optimal equipment loadouts for party members based on priorities
+    function calculateOptimalLoadouts(availableItems, allCharacterPriorityWeights, partyMembers) {
         // Create a working copy of the available items
         let currentPool = [...availableItems];
         const loadouts = {};
     
         // Only calculate loadouts for selected party members
         for (const charKey of partyMembers) {
-            const character = db.characters[charKey];
+            const character = gameDatabase.characters[charKey];
             
             // Get character-specific priorities and normalize them
-            const rawPriorities = allCharacterPriorities[charKey];
-            const normalizedPriorities = normalizePriorities(rawPriorities);
+            const rawPriorities = allCharacterPriorityWeights[charKey];
+            const normalizedPriorities = normalizePriorityWeights(rawPriorities);
             
             // Find the best weapon for this character
-            const bestWeapon = findBestItemForSlot(currentPool, 'weapon', character, normalizedPriorities);
+            const bestWeapon = findOptimalItemForSlot(currentPool, 'weapon', character, normalizedPriorities);
             
             // Create a pool without the weapon (if found)
             let poolWithoutWeapon = currentPool;
@@ -644,7 +652,7 @@
             }
             
             // Find the best first armor for this character
-            const bestArmor1 = findBestItemForSlot(poolWithoutWeapon, 'armor1', character, normalizedPriorities);
+            const bestArmor1 = findOptimalItemForSlot(poolWithoutWeapon, 'armor1', character, normalizedPriorities);
             
             // Create a pool without the weapon and first armor (if found)
             let poolWithoutWeaponAndArmor1 = poolWithoutWeapon;
@@ -653,7 +661,7 @@
             }
             
             // Find the best second armor for this character
-            const bestArmor2 = findBestItemForSlot(poolWithoutWeaponAndArmor1, 'armor2', character, normalizedPriorities);
+            const bestArmor2 = findOptimalItemForSlot(poolWithoutWeaponAndArmor1, 'armor2', character, normalizedPriorities);
             
             // Create the loadout
             const loadout = {
@@ -687,8 +695,8 @@
         return loadouts;
     }
     
-    // Function to populate the weapon and armor checklists
-    function populateChecklists() {
+    // Populates UI with weapon and armor selection checkboxes
+    function populateEquipmentChecklists() {
         const weaponChecklist = document.getElementById('weapon-checklist');
         const armorChecklist = document.getElementById('armor-checklist');
         
@@ -697,7 +705,7 @@
         armorChecklist.innerHTML = '<h3>Armor</h3>';
         
         // Iterate through equipment and create checklist items
-        db.equipment.forEach((item, index) => {
+        gameDatabase.equipment.forEach((item, index) => {
             // Create container div for the checkbox, label, and quantity input
             const container = document.createElement('div');
             container.className = 'checklist-item';
@@ -763,8 +771,8 @@
         });
     }
     
-    // Function to save the current state to localStorage
-    function saveStateToLocalStorage() {
+    // Saves current application state to browser localStorage
+    function saveApplicationState() {
         const state = {
             party: {},
             items: {},
@@ -790,8 +798,8 @@
         localStorage.setItem('deltaruneLoadoutCalculatorState', JSON.stringify(state));
     }
     
-    // Function to load the state from localStorage
-    function loadStateFromLocalStorage() {
+    // Loads application state from browser localStorage
+    function loadApplicationState() {
         const savedState = localStorage.getItem('deltaruneLoadoutCalculatorState');
         if (!savedState) return;
         
@@ -839,40 +847,40 @@
         }
     }
     
-    // Call populateChecklists when the page loads
+    // Initializes application when page loads
     document.addEventListener('DOMContentLoaded', function() {
-        populateChecklists();
+        populateEquipmentChecklists();
         
-        // Load saved state from localStorage
-        loadStateFromLocalStorage();
+        // Load saved application state
+        loadApplicationState();
         
         // Add event listeners to party member checkboxes
         const partyCheckboxes = document.querySelectorAll('#party-selection input[type="checkbox"]');
         partyCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
-                saveStateToLocalStorage(); // Save state when party checkbox changes
+                saveApplicationState(); // Save state when party checkbox changes
             });
         });
         
         // Add event listener to the calculate button
-        document.getElementById('calculate-button').addEventListener('click', handleCalculation);
+        document.getElementById('calculate-button').addEventListener('click', calculateOptimalLoadouts);
         
         // Add event listeners to all item quantity inputs
         const quantityInputs = document.querySelectorAll('.quantity-input');
         quantityInputs.forEach(input => {
             input.addEventListener('change', function() {
-                saveStateToLocalStorage(); // Save state when quantity changes
+                saveApplicationState(); // Save state when quantity changes
             });
         });
         
         // Add event listeners for loadout customization
         setupPriorityEventListeners();
         
-        // Initialize the UI with the current priorities
-        updatePriorityUI();
+        // Initialize the priority controls for the first time
+        updatePriorityControls();
     });
 
-    // Function to update priority controls based on selected character
+    // Updates priority weight controls for selected character
     function updatePriorityControls() {
         const selectedCharacter = document.getElementById('character-select').value;
         const container = document.getElementById('priority-controls-container');
@@ -887,10 +895,11 @@
         clonedTemplate.removeAttribute('id');
         container.appendChild(clonedTemplate);
         
-        // Get the character's priorities
-        const priorities = characterPriorities[selectedCharacter];
+        // Get the character's priority weights
+        const priorityWeights = characterPriorityWeights[selectedCharacter];
         
-        // Update the controls with the character's priorities
+        
+        // Update the controls with the character's priority weights
         const priorityControls = container.querySelector('.priority-presets');
         const atSlider = container.querySelector('.priority-at');
         const dfSlider = container.querySelector('.priority-df');
@@ -900,15 +909,14 @@
         const magicValue = container.querySelector('.priority-magic-value');
         
         // Set slider values
-        atSlider.value = priorities.at;
-        dfSlider.value = priorities.df;
-        magicSlider.value = priorities.magic;
+        atSlider.value = priorityWeights.at;
+        dfSlider.value = priorityWeights.df;
+        magicSlider.value = priorityWeights.magic;
         
         // Set display values
-        atValue.textContent = priorities.at;
-        dfValue.textContent = priorities.df;
-        magicValue.textContent = priorities.magic;
-        
+        atValue.textContent = priorityWeights.at;
+        dfValue.textContent = priorityWeights.df;
+        magicValue.textContent = priorityWeights.magic;
         // Set preset dropdown to "Custom" by default
         priorityControls.value = 'custom';
         
@@ -916,17 +924,17 @@
         updatePresetDropdownForCharacter(selectedCharacter);
     }
     
-    // Function to update the preset dropdown to match current priorities if they match a preset
+    // Updates preset dropdown to match current priority weights if they match a preset
     function updatePresetDropdownForCharacter(character) {
         const container = document.getElementById('priority-controls-container');
         const presetDropdown = container.querySelector('.priority-presets');
-        const priorities = characterPriorities[character];
+        const priorityWeights = characterPriorityWeights[character];
         let foundMatch = false;
         
-        for (const [presetName, presetValues] of Object.entries(priorityPresets)) {
-            if (priorities.at === presetValues[character].at &&
-                priorities.df === presetValues[character].df &&
-                priorities.magic === presetValues[character].magic) {
+        for (const [presetName, presetValues] of Object.entries(priorityWeightPresets)) {
+            if (priorityWeights.at === presetValues[character].at &&
+                priorityWeights.df === presetValues[character].df &&
+                priorityWeights.magic === presetValues[character].magic) {
                 presetDropdown.value = presetName;
                 foundMatch = true;
                 break;
@@ -952,8 +960,8 @@
             if (e.target.classList.contains('priority-presets')) {
                 const selectedPreset = e.target.value;
                 
-                if (priorityPresets[selectedPreset]) {
-                    characterPriorities[selectedCharacter] = {...priorityPresets[selectedPreset][selectedCharacter]};
+                if (priorityWeightPresets[selectedPreset]) {
+                    characterPriorityWeights[selectedCharacter] = {...priorityWeightPresets[selectedPreset][selectedCharacter]};
                     updatePriorityControls();
                     saveStateToLocalStorage();
                 }
@@ -961,19 +969,19 @@
             
             // Handle slider changes
             if (e.target.classList.contains('priority-at')) {
-                characterPriorities[selectedCharacter].at = parseInt(e.target.value);
+                characterPriorityWeights[selectedCharacter].at = parseInt(e.target.value);
                 updatePriorityControls();
                 saveStateToLocalStorage();
             }
             
             if (e.target.classList.contains('priority-df')) {
-                characterPriorities[selectedCharacter].df = parseInt(e.target.value);
+                characterPriorityWeights[selectedCharacter].df = parseInt(e.target.value);
                 updatePriorityControls();
                 saveStateToLocalStorage();
             }
             
             if (e.target.classList.contains('priority-magic')) {
-                characterPriorities[selectedCharacter].magic = parseInt(e.target.value);
+                characterPriorityWeights[selectedCharacter].magic = parseInt(e.target.value);
                 updatePriorityControls();
                 saveStateToLocalStorage();
             }
@@ -983,7 +991,7 @@
         document.getElementById('priority-controls-container').addEventListener('click', function(e) {
             if (e.target.classList.contains('reset-priorities')) {
                 const selectedCharacter = document.getElementById('character-select').value;
-                characterPriorities[selectedCharacter] = {...priorityPresets['balanced'][selectedCharacter]};
+                characterPriorityWeights[selectedCharacter] = {...priorityWeightPresets['balanced'][selectedCharacter]};
                 updatePriorityControls();
                 saveStateToLocalStorage();
             }
@@ -992,24 +1000,13 @@
     
     // Function to update the priority display values
     function updatePriorityDisplay() {
-        document.getElementById('priority-at-value').textContent = currentPriorities.at;
-        document.getElementById('priority-df-value').textContent = currentPriorities.df;
-        document.getElementById('priority-magic-value').textContent = currentPriorities.magic;
+        const selectedCharacter = document.getElementById('character-select').value;
+        const priorities = characterPriorityWeights[selectedCharacter];
+        document.getElementById('priority-at-value').textContent = priorities.at;
+        document.getElementById('priority-df-value').textContent = priorities.df;
+        document.getElementById('priority-magic-value').textContent = priorities.magic;
     }
     
-    // Function to update all priority UI elements
-    function updatePriorityUI() {
-        // Update slider positions
-        document.getElementById('priority-at').value = currentPriorities.at;
-        document.getElementById('priority-df').value = currentPriorities.df;
-        document.getElementById('priority-magic').value = currentPriorities.magic;
-        
-        // Update display values
-        updatePriorityDisplay();
-        
-        // Update preset dropdown to match current priorities if they match a preset
-        updatePresetDropdown();
-    }
     
     // Function to set the preset dropdown to "Custom"
     function setPresetToCustom() {
@@ -1023,33 +1020,9 @@
     }
     
     // Function to update the preset dropdown to match current priorities if they match a preset
-    function updatePresetDropdown() {
-        const presetDropdown = document.getElementById('priority-presets');
-        let foundMatch = false;
-        
-        for (const [presetName, presetValues] of Object.entries(priorityPresets)) {
-            if (currentPriorities.at === presetValues.at &&
-                currentPriorities.df === presetValues.df &&
-                currentPriorities.magic === presetValues.magic) {
-                for (let i = 0; i < presetDropdown.options.length; i++) {
-                    if (presetDropdown.options[i].value === presetName) {
-                        presetDropdown.selectedIndex = i;
-                        foundMatch = true;
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-        
-        // If no match found, set to Custom
-        if (!foundMatch) {
-            setPresetToCustom();
-        }
-    }
 
-    // Function to handle the calculation process
-    function handleCalculation() {
+    // Handles loadout calculation when user clicks calculate button
+    function calculateOptimalLoadouts() {
         // Show loading indicator
         const loadingIndicator = document.getElementById('loading-indicator');
         loadingIndicator.style.display = 'block';
@@ -1092,10 +1065,10 @@
         // Use setTimeout to make the calculation non-blocking
         setTimeout(() => {
             // Calculate optimal loadouts only for selected party members using the new algorithm
-            const loadouts = calculateOptimalLoadoutsWithPriorities(availableItems, characterPriorities, selectedParty);
+            const loadouts = calculateOptimalLoadouts(availableItems, characterPriorityWeights, selectedParty);
             
             // Display results
-            displayResults(loadouts, selectedParty);
+            renderLoadoutResults(loadouts, selectedParty);
             
             // Hide loading indicator
             loadingIndicator.style.display = 'none';

@@ -1,6 +1,12 @@
 # Deltarune Ultimate Loadout Optimizer
+<!--
+@file README.md
+@author Stavrianos Galben
+@date 2025-09-03
+@desc Project documentation for Deltarune loadout calculator
+-->
 
-This is a web-based tool to automatically calculate the optimal equipment loadout for characters in the game Deltarune.
+This project provides a web-based tool that calculates the optimal equipment loadout for characters in the game Deltarune.
 
 ## Features
 
