@@ -1,9 +1,3 @@
-<!--
- * @file index.html
- * @author Stavrianos Galben
- * @date 2025-09-03
- * @desc Main interface for Deltarune Ultimate Loadout Calculator
- -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -566,16 +560,16 @@
             return null;
         }
         
-        // Check if all priorities for usable stats are zero
+        // Check if all priority weights for usable stats are zero
         let allZero = true;
         for (const stat of character.usableStats) {
-            if (priorities[stat] > 0) {
+            if (priorityWeights[stat] > 0) {
                 allZero = false;
                 break;
             }
         }
         
-        // If all priorities are zero, find item with highest combined usable stats
+        // If all priority weights are zero, find item with highest combined usable stats
         if (allZero) {
             let bestItem = validItems[0];
             let bestScore = 0;
@@ -605,8 +599,8 @@
         
         // Calculate score for first item
         for (const stat of character.usableStats) {
-            if (priorities[stat] > 0) {
-                bestScore += (bestItem[stat] || 0) * priorities[stat];
+            if (priorityWeights[stat] > 0) {
+                bestScore += (bestItem[stat] || 0) * priorityWeights[stat];
             }
         }
         
@@ -614,8 +608,8 @@
         for (let i = 1; i < validItems.length; i++) {
             let score = 0;
             for (const stat of character.usableStats) {
-                if (priorities[stat] > 0) {
-                    score += (validItems[i][stat] || 0) * priorities[stat];
+                if (priorityWeights[stat] > 0) {
+                    score += (validItems[i][stat] || 0) * priorityWeights[stat];
                 }
             }
             
@@ -754,7 +748,7 @@
                     quantityInput.style.display = 'none';
                     quantityInput.value = '1'; // Reset to 1 when unchecked
                 }
-                saveStateToLocalStorage(); // Save state when checkbox is toggled
+                saveApplicationState(); // Save state when checkbox is toggled
             });
             
             // Add elements to container
@@ -776,7 +770,7 @@
         const state = {
             party: {},
             items: {},
-            priorities: characterPriorities
+            priorities: characterPriorityWeights
         };
         
         // Save party member checkbox states
@@ -796,14 +790,19 @@
         });
         
         localStorage.setItem('deltaruneLoadoutCalculatorState', JSON.stringify(state));
+        console.log('State saved:', state);
     }
     
     // Loads application state from browser localStorage
     function loadApplicationState() {
         const savedState = localStorage.getItem('deltaruneLoadoutCalculatorState');
-        if (!savedState) return;
+        if (!savedState) {
+            console.log('No saved state found');
+            return;
+        }
         
         const state = JSON.parse(savedState);
+        console.log('State loaded:', state);
         
         // Load party member checkbox states
         for (const [id, checked] of Object.entries(state.party)) {
@@ -838,8 +837,8 @@
         if (state.priorities) {
             // Load character priorities
             for (const [character, priorities] of Object.entries(state.priorities)) {
-                if (characterPriorities[character]) {
-                    characterPriorities[character] = {...priorities};
+                if (characterPriorityWeights[character]) {
+                    characterPriorityWeights[character] = {...priorities};
                 }
             }
             // Update UI for currently selected character
@@ -963,7 +962,7 @@
                 if (priorityWeightPresets[selectedPreset]) {
                     characterPriorityWeights[selectedCharacter] = {...priorityWeightPresets[selectedPreset][selectedCharacter]};
                     updatePriorityControls();
-                    saveStateToLocalStorage();
+                    saveApplicationState();
                 }
             }
             
@@ -971,19 +970,19 @@
             if (e.target.classList.contains('priority-at')) {
                 characterPriorityWeights[selectedCharacter].at = parseInt(e.target.value);
                 updatePriorityControls();
-                saveStateToLocalStorage();
+                saveApplicationState();
             }
             
             if (e.target.classList.contains('priority-df')) {
                 characterPriorityWeights[selectedCharacter].df = parseInt(e.target.value);
                 updatePriorityControls();
-                saveStateToLocalStorage();
+                saveApplicationState();
             }
             
             if (e.target.classList.contains('priority-magic')) {
                 characterPriorityWeights[selectedCharacter].magic = parseInt(e.target.value);
                 updatePriorityControls();
-                saveStateToLocalStorage();
+                saveApplicationState();
             }
         });
         
@@ -993,7 +992,7 @@
                 const selectedCharacter = document.getElementById('character-select').value;
                 characterPriorityWeights[selectedCharacter] = {...priorityWeightPresets['balanced'][selectedCharacter]};
                 updatePriorityControls();
-                saveStateToLocalStorage();
+                saveApplicationState();
             }
         });
     }
@@ -1064,14 +1063,19 @@
         
         // Use setTimeout to make the calculation non-blocking
         setTimeout(() => {
-            // Calculate optimal loadouts only for selected party members using the new algorithm
-            const loadouts = calculateOptimalLoadouts(availableItems, characterPriorityWeights, selectedParty);
-            
-            // Display results
-            renderLoadoutResults(loadouts, selectedParty);
-            
-            // Hide loading indicator
-            loadingIndicator.style.display = 'none';
+            try {
+                // Calculate optimal loadouts only for selected party members using the new algorithm
+                const loadouts = calculateOptimalLoadoutsWithPriorities(availableItems, characterPriorityWeights, selectedParty);
+                
+                // Display results
+                displayResults(loadouts, selectedParty);
+            } catch (error) {
+                console.error("Error calculating loadouts:", error);
+                alert("An error occurred during calculation. See console for details.");
+            } finally {
+                // Hide loading indicator
+                loadingIndicator.style.display = 'none';
+            }
         }, 0);
     }
     
@@ -1083,10 +1087,11 @@
     
         // Only calculate loadouts for selected party members
         for (const charKey of partyMembers) {
-            const character = db.characters[charKey];
+            const character = gameDatabase.characters[charKey];
+            const normalizedPriorities = normalizePriorityWeights(priorities[charKey]);
             
             // Find the best weapon for this character
-            const bestWeapon = findBestItemForSlot(currentPool, 'weapon', character, priorities);
+            const bestWeapon = findOptimalItemForSlot(currentPool, 'weapon', character, normalizedPriorities);
             
             // Create a pool without the weapon (if found)
             let poolWithoutWeapon = currentPool;
@@ -1095,7 +1100,7 @@
             }
             
             // Find the best first armor for this character
-            const bestArmor1 = findBestItemForSlot(poolWithoutWeapon, 'armor1', character, priorities);
+            const bestArmor1 = findOptimalItemForSlot(poolWithoutWeapon, 'armor1', character, normalizedPriorities);
             
             // Create a pool without the weapon and first armor (if found)
             let poolWithoutWeaponAndArmor1 = poolWithoutWeapon;
@@ -1104,7 +1109,7 @@
             }
             
             // Find the best second armor for this character
-            const bestArmor2 = findBestItemForSlot(poolWithoutWeaponAndArmor1, 'armor2', character, priorities);
+            const bestArmor2 = findOptimalItemForSlot(poolWithoutWeaponAndArmor1, 'armor2', character, normalizedPriorities);
             
             // Create the loadout
             const loadout = {
@@ -1149,38 +1154,43 @@
             
             // Check if character is in the selected party
             if (selectedParty.includes(charKey)) {
-                // Character is in party, display their loadout
+                const character = gameDatabase.characters[charKey];
                 const loadout = loadouts[charKey];
                 
-                // Clear existing content
-                resultsContainer.innerHTML = `<h3>${db.characters[charKey].name}</h3>`;
+                // Clear existing content and set the character name as header
+                resultsContainer.innerHTML = `<h3>${character.name}</h3>`;
                 
-                // Create and populate results content
-                const weaponName = loadout.weapon ? loadout.weapon.name : 'None';
-                const armor1Name = loadout.armor1 ? loadout.armor1.name : 'None';
-                const armor2Name = loadout.armor2 ? loadout.armor2.name : 'None';
+                // Check if loadout exists before accessing its properties
+                if (loadout) {
+                    const weaponName = loadout.weapon ? loadout.weapon.name : 'None';
+                    const armor1Name = loadout.armor1 ? loadout.armor1.name : 'None';
+                    const armor2Name = loadout.armor2 ? loadout.armor2.name : 'None';
+                    
+                    const statsHTML = `
+                        <p><strong>Weapon:</strong> ${weaponName}</p>
+                        <p><strong>Armor 1:</strong> ${armor1Name}</p>
+                        <p><strong>Armor 2:</strong> ${armor2Name}</p>
+                        <div class="stats-display">
+                            <div class="stat">
+                                <div class="label">AT</div>
+                                <div class="value">${loadout.totalStats.at}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="label">DF</div>
+                                <div class="value">${loadout.totalStats.df}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="label">MG</div>
+                                <div class="value">${loadout.totalStats.magic}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    resultsContainer.innerHTML += statsHTML;
+                } else {
+                    resultsContainer.innerHTML += `<p>No loadout calculated for ${character.name}</p>`;
+                }
                 
-                const statsHTML = `
-                    <p><strong>Weapon:</strong> ${weaponName}</p>
-                    <p><strong>Armor 1:</strong> ${armor1Name}</p>
-                    <p><strong>Armor 2:</strong> ${armor2Name}</p>
-                    <div class="stats-display">
-                        <div class="stat">
-                            <div class="label">AT</div>
-                            <div class="value">${loadout.totalStats.at}</div>
-                        </div>
-                        <div class="stat">
-                            <div class="label">DF</div>
-                            <div class="value">${loadout.totalStats.df}</div>
-                        </div>
-                        <div class="stat">
-                            <div class="label">MG</div>
-                            <div class="value">${loadout.totalStats.magic}</div>
-                        </div>
-                    </div>
-                `;
-                
-                resultsContainer.innerHTML += statsHTML;
                 resultsContainer.style.display = 'block'; // Show the container
             } else {
                 // Character is not in party, hide their results

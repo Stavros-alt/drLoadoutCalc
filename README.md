@@ -1,10 +1,4 @@
 # Deltarune Ultimate Loadout Optimizer
-<!--
-@file README.md
-@author Stavrianos Galben
-@date 2025-09-03
-@desc Project documentation for Deltarune loadout calculator
--->
 
 This project provides a web-based tool that calculates the optimal equipment loadout for characters in the game Deltarune.
 
@@ -28,3 +22,6 @@ This project provides a web-based tool that calculates the optimal equipment loa
 ## Live Demo
 
 Try the calculator without downloading: [Live Demo](https://stavros-alt.github.io/drLoadoutCalc/)
+
+### Bug Fixes
+* Fixed uncaught ReferenceError: `characterPriorities is not defined` by correcting variable references to `characterPriorityWeights` in loadApplicationState()
